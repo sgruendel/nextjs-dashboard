@@ -1,13 +1,5 @@
 import { unstable_noStore as noStore } from 'next/cache';
-import {
-  CustomerField,
-  CustomersTable,
-  InvoiceForm,
-  InvoicesTable,
-  User,
-  Revenue,
-  LatestInvoice,
-} from './definitions';
+import { CustomerField, CustomersTable, InvoiceForm, InvoicesTable, User, Revenue, LatestInvoice } from './definitions';
 import { formatCurrency } from './utils';
 import { connectToDb } from './db';
 
@@ -110,29 +102,19 @@ export async function fetchCardData() {
     // You can probably combine these into a single SQL query
     // However, we are intentionally splitting them to demonstrate
     // how to initialize multiple queries in parallel with JS.
-    const invoiceCountPromise: Promise<number> =
-      Invoices.countDocuments().exec();
-    const customerCountPromise: Promise<number> =
-      Customers.countDocuments().exec();
+    const invoiceCountPromise: Promise<number> = Invoices.countDocuments().exec();
+    const customerCountPromise: Promise<number> = Customers.countDocuments().exec();
     const invoiceStatusPromise: Promise<MongoGroupSum[]> = Invoices.aggregate([
       { $group: { _id: '$status', sum: { $sum: '$amount' } } },
     ]);
 
-    const data = await Promise.all([
-      invoiceCountPromise,
-      customerCountPromise,
-      invoiceStatusPromise,
-    ]);
+    const data = await Promise.all([invoiceCountPromise, customerCountPromise, invoiceStatusPromise]);
 
     const numberOfInvoices = data[0];
     const numberOfCustomers = data[1];
     // TODO don't format here, do it in .tsx
-    const totalPaidInvoices = formatCurrency(
-      data[2].find((group) => group._id === 'paid')?.sum ?? 0
-    );
-    const totalPendingInvoices = formatCurrency(
-      data[2].find((group) => group._id === 'pending')?.sum ?? 0
-    );
+    const totalPaidInvoices = formatCurrency(data[2].find((group) => group._id === 'paid')?.sum ?? 0);
+    const totalPendingInvoices = formatCurrency(data[2].find((group) => group._id === 'pending')?.sum ?? 0);
 
     return {
       numberOfCustomers,
@@ -179,11 +161,7 @@ function getInvoicesLookup(query: string) {
   };
 }
 
-export async function fetchFilteredInvoices(
-  query: string,
-  currentPage: number,
-  itemsPerPage: number
-) {
+export async function fetchFilteredInvoices(query: string, currentPage: number, itemsPerPage: number) {
   await connectToDb();
   noStore();
 
@@ -269,7 +247,7 @@ export async function fetchFilteredInvoicesCount(query: string) {
       },
     ]).exec();
 
-    return counts[0].count;
+    return counts[0]?.count || 0;
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch total number of invoices.');
