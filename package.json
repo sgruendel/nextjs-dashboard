@@ -7,7 +7,7 @@
     "seed-vercel": "node -r dotenv/config ./scripts/seed.js",
     "seed": "node ./scripts/seed-mongodb.js"
   },
-"dependencies": {
+  "dependencies": {
     "@heroicons/react": "^2.0.18",
     "@tailwindcss/forms": "^0.5.6",
     "@types/node": "20.5.7",
@@ -27,8 +27,12 @@
     "@types/bcrypt": "^5.0.1",
     "@types/react": "18.2.21",
     "@types/react-dom": "18.2.14",
+    "@typescript-eslint/eslint-plugin": "^6.9.1",
     "dotenv": "^16.3.1",
-    "prettier": "^3.0.3"
+    "eslint": "^8.52.0",
+    "eslint-config-prettier": "^9.0.0",
+    "prettier": "^3.0.3",
+    "prettier-plugin-tailwindcss": "^0.5.6"
   },
   "engines": {
     "node": ">=18"
