@@ -7,4 +7,4 @@ For more information, see the [course curriculum](https://nextjs.org/learn) on t
 ###
 
 Added plugins/config:
-npm install --save-dev prettier eslint eslint-config-prettier @typescript-eslint/eslint-plugin prettier-plugin-tailwindcss
+npm install --save-dev prettier eslint eslint-config-prettier eslint-plugin-tailwindcss @typescript-eslint/eslint-plugin prettier-plugin-tailwindcss @trivago/prettier-plugin-sort-imports
