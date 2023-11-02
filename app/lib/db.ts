@@ -16,6 +16,7 @@ export const connectToDb = async () => {
     await mongoose.connect(process.env.MONGODB_URI!, {
       dbName: 'nextjs-dashboard',
     });
+    console.log('connected!');
     isConnected = true;
   } catch (err) {
     console.error(err);

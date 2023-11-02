@@ -3,8 +3,9 @@
 import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import Link from 'next/link';
-import { generatePagination } from '@/app/lib/utils';
 import { usePathname, useSearchParams } from 'next/navigation';
+
+import { generatePagination } from '@/app/lib/utils';
 
 export default function Pagination({ itemsPerPage, totalItems }: { itemsPerPage: number; totalItems: number }) {
   const pathname = usePathname();
@@ -26,11 +27,11 @@ export default function Pagination({ itemsPerPage, totalItems }: { itemsPerPage:
   return (
     <>
       <div className="inline-flex">
-        {(totalItems > 0) &&
+        {totalItems > 0 && (
           <div className="mr-2 flex items-center justify-center text-xs md:mr-4">
             {startIndex}-{endIndex} of {totalItems}
           </div>
-        }
+        )}
         <PaginationArrow direction="left" href={createPageURL(currentPage - 1)} isDisabled={currentPage <= 1} />
 
         <div className="flex -space-x-px">
@@ -75,7 +76,7 @@ function PaginationNumber({
   position?: 'first' | 'last' | 'middle' | 'single';
   isActive: boolean;
 }) {
-  const className = clsx('flex h-10 w-10 items-center justify-center text-sm border', {
+  const className = clsx('flex h-10 w-10 items-center justify-center border text-sm', {
     'rounded-l-md': position === 'first' || position === 'single',
     'rounded-r-md': position === 'last' || position === 'single',
     'z-10 bg-blue-600 border-blue-600 text-white': isActive,

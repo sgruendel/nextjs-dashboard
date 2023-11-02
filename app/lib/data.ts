@@ -1,11 +1,19 @@
 import { unstable_noStore as noStore } from 'next/cache';
-import { CustomerField, CustomersTable, InvoiceForm, InvoicesTable, User, Revenue, LatestInvoice } from './definitions';
-import { formatCurrency } from './utils';
-import { connectToDb } from './db';
 
-import Customers from '../models/customers';
-import Invoices from '../models/invoices';
-import Revenues from '../models/revenues';
+import { connectToDb } from '@/app/lib/db';
+import {
+  CustomerField,
+  CustomersTable,
+  InvoiceForm,
+  InvoicesTable,
+  LatestInvoice,
+  Revenue,
+  User,
+} from '@/app/lib/definitions';
+import { formatCurrency } from '@/app/lib/utils';
+import Customers from '@/app/models/customers';
+import Invoices from '@/app/models/invoices';
+import Revenues from '@/app/models/revenues';
 
 type MongoGroupSum = {
   _id: any;
