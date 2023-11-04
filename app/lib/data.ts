@@ -2,15 +2,7 @@ import { Types } from 'mongoose';
 import { unstable_noStore as noStore } from 'next/cache';
 
 import { connectToDb } from '@/app/lib/db';
-import {
-  CustomerField,
-  CustomersTable,
-  InvoiceForm,
-  InvoicesTable,
-  LatestInvoice,
-  Revenue,
-  User,
-} from '@/app/lib/definitions';
+import { CustomerField, CustomersTable, InvoiceForm, InvoicesTable, LatestInvoice, Revenue, User } from '@/app/lib/definitions';
 import { formatCurrency } from '@/app/lib/utils';
 import Customers from '@/app/models/customers';
 import Invoices from '@/app/models/invoices';
@@ -102,6 +94,7 @@ export async function fetchLatestInvoices() {
     // TODO don't format amount here, do it in .tsx like ui/invoices/table.tsx
     const latestInvoices: LatestInvoice[] = invoices.map((invoice) => ({
       ...invoice,
+      _id: invoice._id.toString(),
       amount: formatCurrency(invoice.amount),
     }));
     return latestInvoices;
@@ -207,7 +200,7 @@ export async function fetchFilteredInvoices(query: string, currentPage: number, 
     */
 
     // filter date/status
-    const invoices: InvoicesTable[] = await Invoices.aggregate([
+    const invoices = await Invoices.aggregate([
       getInvoicesLookup(query),
       {
         $unwind: '$customer',
@@ -229,7 +222,7 @@ export async function fetchFilteredInvoices(query: string, currentPage: number, 
       .limit(itemsPerPage)
       .exec();
 
-    return invoices;
+    return objectIdToString(invoices) as InvoicesTable[];
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch invoices.');
@@ -276,6 +269,7 @@ export async function fetchInvoiceById(id: string) {
   noStore();
 
   try {
+    /*
     const data = await sql<InvoiceForm>`
       SELECT
         invoices.id,
@@ -285,16 +279,18 @@ export async function fetchInvoiceById(id: string) {
       FROM invoices
       WHERE invoices.id = ${id};
     `;
+    */
+    const invoice = await Invoices.findById(id).lean().select(['customer_id', 'amount', 'status']).exec();
 
-    const invoice = data.rows.map((invoice) => ({
+    return {
       ...invoice,
-      // Convert amount from cents to dollars
+      _id: invoice._id.toString(),
+      customer_id: invoice.customer_id.toString(),
       amount: invoice.amount / 100,
-    }));
-
-    return invoice[0];
+    } as InvoiceForm;
   } catch (error) {
     console.error('Database Error:', error);
+    throw new Error('Failed to fetch invoice.');
   }
 }
 
@@ -379,5 +375,32 @@ export async function createInvoice(customerId: string, amount: number, status: 
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to create invoice.');
+  }
+}
+
+export async function updateInvoice(id: string, customerId: string, amount: number, status: string) {
+  await connectToDb();
+  noStore();
+
+  try {
+    return Invoices.updateOne(
+      { _id: new Types.ObjectId(id) },
+      { customer_id: new Types.ObjectId(customerId), amount, status }
+    );
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to update invoice.');
+  }
+}
+
+export async function deleteInvoice(id: string) {
+  await connectToDb();
+  noStore();
+
+  try {
+    return Invoices.findByIdAndDelete(id);
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to delete invoice.');
   }
 }

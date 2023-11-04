@@ -3,12 +3,13 @@
 import { CheckIcon, ClockIcon, CurrencyDollarIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
+import { createInvoice } from '@/app/lib/actions';
 import { CustomerField } from '@/app/lib/definitions';
 import { Button } from '@/app/ui/button';
 
-export default function Form({ customers }: { customers: CustomerField[] }) {
+export default function CreateInvoiceForm({ customers }: { customers: CustomerField[] }) {
   return (
-    <form>
+    <form action={createInvoice}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         {/* Customer Name */}
         <div className="mb-4">
@@ -26,7 +27,7 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
                 Select a customer
               </option>
               {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
+                <option key={customer._id} value={customer._id}>
                   {customer.name}
                 </option>
               ))}
@@ -53,7 +54,6 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
               <CurrencyDollarIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
           </div>
-          s
         </div>
 
         {/* Invoice Status */}
