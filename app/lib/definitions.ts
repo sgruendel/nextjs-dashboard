@@ -66,7 +66,7 @@ export type InvoicesTable = {
 };
 
 export type CustomersTable = {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   image_url: string;
@@ -76,7 +76,7 @@ export type CustomersTable = {
 };
 
 export type FormattedCustomersTable = {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   image_url: string;
@@ -86,12 +86,12 @@ export type FormattedCustomersTable = {
 };
 
 export type CustomerField = {
-  id: string;
+  _id: string;
   name: string;
 };
 
 export type InvoiceForm = {
-  id: string;
+  _id: string;
   customer_id: string;
   amount: number;
   status: 'pending' | 'paid';

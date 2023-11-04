@@ -19,12 +19,6 @@ const RevenuesSchema = new Schema(
   }
 );
 
-/*
-transactions.index({ isin: 1, date: -1, time: -1 }, { unique: true });
-transactions.index({ isin: 1, date: -1, id: -1 }, { unique: true });
-exports.Transactions = mongoose.model('Transactions', transactions);
-*/
-
 const Revenues = models.Revenues || model('Revenues', RevenuesSchema);
 
 export default Revenues;

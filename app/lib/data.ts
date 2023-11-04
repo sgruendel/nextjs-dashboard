@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import { unstable_noStore as noStore } from 'next/cache';
 
 import { connectToDb } from '@/app/lib/db';
@@ -16,11 +17,18 @@ import Invoices from '@/app/models/invoices';
 import Revenues from '@/app/models/revenues';
 
 type MongoGroupSum = {
-  _id: any;
+  _id: string;
   sum: number;
 };
 
 type MongoCount = { count: number };
+
+function objectIdToString(leanDocs) {
+  return leanDocs.map((leanDoc) => ({
+    ...leanDoc,
+    _id: leanDoc._id.toString(),
+  }));
+}
 
 export async function fetchRevenue() {
   await connectToDb();
@@ -36,12 +44,13 @@ export async function fetchRevenue() {
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
     //const data = await sql<Revenue>`SELECT * FROM revenue`;
-    const data: Revenue[] = await Revenues.find().exec();
+    // TODO order by month, worked in SQL because it was just inserted in correct order :)
+    const revenues = await Revenues.find().lean().select(['month', 'revenue']).exec();
     // TODO mapping definitions.Revenue and models.Revenues
 
     console.log('Data fetch complete after 3 seconds.');
 
-    return data;
+    return objectIdToString(revenues) as Revenue[];
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch revenue data.');
@@ -60,7 +69,7 @@ export async function fetchLatestInvoices() {
         $lookup: {
           from: Customers.collection.name,
           localField: 'customer_id',
-          foreignField: 'id', // TODO should be _id when using MongoDB's ids
+          foreignField: '_id',
           as: 'customer',
         },
       },
@@ -141,7 +150,7 @@ function getInvoicesLookup(query: string) {
     $lookup: {
       from: Customers.collection.name,
       localField: 'customer_id',
-      foreignField: 'id', // TODO should be _id when using MongoDB's ids
+      foreignField: '_id',
       let: {
         name: { $toLower: '$name' },
         email: { $toLower: '$email' },
@@ -294,6 +303,7 @@ export async function fetchCustomers() {
   noStore();
 
   try {
+    /*
     const data = await sql<CustomerField>`
       SELECT
         id,
@@ -301,9 +311,10 @@ export async function fetchCustomers() {
       FROM customers
       ORDER BY name ASC
     `;
+    */
+    const customers = await Customers.find().lean().select('name').sort({ name: 1 }).exec();
 
-    const customers = data.rows;
-    return customers;
+    return objectIdToString(customers) as CustomerField[];
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch all customers.');
@@ -356,5 +367,17 @@ export async function getUser(email: string) {
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');
+  }
+}
+
+export async function createInvoice(customerId: string, amount: number, status: string, date: string) {
+  await connectToDb();
+  noStore();
+
+  try {
+    return Invoices.create([{ customer_id: new Types.ObjectId(customerId), amount, status, date }]);
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to create invoice.');
   }
 }

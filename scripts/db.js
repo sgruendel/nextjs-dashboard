@@ -9,10 +9,6 @@ exports.disconnect = mongoose.disconnect;
 // TODO duplicates in db.ts
 const users = new mongoose.Schema(
   {
-    id: {
-      type: mongoose.Schema.Types.UUID,
-      required: true,
-    },
     name: {
       type: String,
       required: true,
@@ -31,16 +27,11 @@ const users = new mongoose.Schema(
     timestamps: true,
   }
 );
-users.index({ id: 1 }, { unique: true });
 users.index({ email: 1 }, { unique: true });
-exports.Users = mongoose.model('Users', users);
+exports.Users = mongoose.models.Users || mongoose.model('Users', users);
 
 const customers = new mongoose.Schema(
   {
-    id: {
-      type: mongoose.Schema.Types.UUID,
-      required: true,
-    },
     name: {
       type: String,
       required: true,
@@ -59,14 +50,14 @@ const customers = new mongoose.Schema(
     timestamps: true,
   }
 );
-customers.index({ id: 1 }, { unique: true });
+customers.index({ name: 1 });
 customers.index({ email: 1 });
-exports.Customers = mongoose.model('Customers', customers);
+exports.Customers = mongoose.models.Customers || mongoose.model('Customers', customers);
 
 const invoices = new mongoose.Schema(
   {
     customer_id: {
-      type: mongoose.Schema.Types.UUID,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Customers',
       required: true,
     },
@@ -89,9 +80,9 @@ const invoices = new mongoose.Schema(
     timestamps: true,
   }
 );
-invoices.index({ customer_id: -1 });
-invoices.index({ date: -1 }, { unique: true });
-exports.Invoices = mongoose.model('Invoices', invoices);
+invoices.index({ customer_id: 1 });
+invoices.index({ date: -1 });
+exports.Invoices = mongoose.models.Invoices || mongoose.model('Invoices', invoices);
 
 const revenues = new mongoose.Schema(
   {
@@ -111,4 +102,4 @@ const revenues = new mongoose.Schema(
   }
 );
 revenues.index({ month: 1 }, { unique: true });
-exports.Revenues = mongoose.model('Revenues', revenues);
+exports.Revenues = mongoose.models.Revenues || mongoose.model('Revenues', revenues);
