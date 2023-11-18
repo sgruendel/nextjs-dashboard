@@ -282,7 +282,8 @@ export async function fetchInvoiceById(id: string) {
     */
     const invoice = await Invoices.findById(id).lean().select(['customer_id', 'amount', 'status']).exec();
 
-    return {
+    // return null if invoice not found
+    return invoice && {
       ...invoice,
       _id: invoice._id.toString(),
       customer_id: invoice.customer_id.toString(),
