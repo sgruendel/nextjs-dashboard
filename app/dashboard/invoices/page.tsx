@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { Suspense } from 'react';
 
 import { fetchFilteredInvoicesCount } from '@/app/lib/data';
@@ -7,6 +8,10 @@ import Pagination from '@/app/ui/invoices/pagination';
 import Table from '@/app/ui/invoices/table';
 import Search from '@/app/ui/search';
 import { InvoicesTableSkeleton } from '@/app/ui/skeletons';
+
+export const metadata: Metadata = {
+  title: 'Invoices',
+};
 
 export default async function InvoicesPage({
   searchParams,
