@@ -1,6 +1,12 @@
 'use client';
 
-import { CheckIcon, ClockIcon, CurrencyDollarIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import {
+  CheckIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+  ExclamationCircleIcon,
+  UserCircleIcon,
+} from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useFormState } from 'react-dom';
 
@@ -132,8 +138,13 @@ export default function EditInvoiceForm({ invoice, customers }: { invoice: Invoi
                 </p>
               ))}
           </div>
-          <div id="message" aria-live="polite" aria-atomic="true">
-            {state.message && <p className="mt-2 text-sm text-red-500">{state.message}</p>}
+          <div className="flex h-8 items-end space-x-1" aria-live="polite" aria-atomic="true">
+            {state.message && (
+              <>
+                <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+                <p className="mt-2 text-sm text-red-500">{state.message}</p>
+              </>
+            )}
           </div>
         </div>
       </div>

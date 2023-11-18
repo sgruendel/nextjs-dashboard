@@ -2,11 +2,20 @@ import { Types } from 'mongoose';
 import { unstable_noStore as noStore } from 'next/cache';
 
 import { connectToDb } from '@/app/lib/db';
-import { CustomerField, CustomersTable, InvoiceForm, InvoicesTable, LatestInvoice, Revenue, User } from '@/app/lib/definitions';
+import {
+  CustomerField,
+  CustomersTable,
+  InvoiceForm,
+  InvoicesTable,
+  LatestInvoice,
+  Revenue,
+  User,
+} from '@/app/lib/definitions';
 import { formatCurrency } from '@/app/lib/utils';
 import Customers from '@/app/models/customers';
 import Invoices from '@/app/models/invoices';
 import Revenues from '@/app/models/revenues';
+import Users from '@/app/models/users';
 
 type MongoGroupSum = {
   _id: string;
@@ -281,9 +290,9 @@ export async function fetchInvoiceById(id: string) {
     `;
     */
     const invoice = await Invoices.findById(id).lean().select(['customer_id', 'amount', 'status']).exec();
+    if (!invoice) return undefined;
 
-    // return null if invoice not found
-    return invoice && {
+    return {
       ...invoice,
       _id: invoice._id.toString(),
       customer_id: invoice.customer_id.toString(),
@@ -354,15 +363,21 @@ export async function fetchFilteredCustomers(query: string) {
   }
 }
 
-export async function getUser(email: string) {
+export async function fetchUserByEmail(email: string) {
   await connectToDb();
   noStore();
 
   try {
-    const user = await sql`SELECT * from USERS where email=${email}`;
-    return user.rows[0] as User;
+    const user = await Users.findOne({ email: email }).lean().select(['name', 'email', 'password']).exec();
+    if (!user) return undefined;
+
+    // return null if user not found
+    return {
+      ...user,
+      _id: user._id.toString(),
+    } as User;
   } catch (error) {
-    console.error('Failed to fetch user:', error);
+    console.error('Database Error:', error);
     throw new Error('Failed to fetch user.');
   }
 }

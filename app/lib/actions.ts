@@ -1,5 +1,6 @@
 'use server';
 
+import { signIn } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -35,6 +36,17 @@ const InvoiceSchema = z.object({
 const CreateInvoice = InvoiceSchema.omit({ id: true, date: true });
 
 const UpdateInvoice = InvoiceSchema.omit({ id: true, date: true });
+
+export async function authenticate(prevState: string | undefined, formData: FormData) {
+  try {
+    await signIn('credentials', Object.fromEntries(formData));
+  } catch (error) {
+    if ((error as Error).message.includes('CredentialsSignin')) {
+      return 'CredentialsSignin';
+    }
+    throw error;
+  }
+}
 
 export async function createInvoice(prevState: State, formData: FormData) {
   // Validate form fields using Zod
