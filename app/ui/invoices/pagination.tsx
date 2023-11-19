@@ -25,43 +25,37 @@ export default function Pagination({ itemsPerPage, totalItems }: { itemsPerPage:
   const pagination = generatePagination(currentPage, totalPages);
 
   return (
-    <>
-      <div className="inline-flex">
-        {totalItems > 0 && (
-          <div className="mr-2 flex items-center justify-center text-xs md:mr-4">
-            {startIndex}-{endIndex} of {totalItems}
-          </div>
-        )}
-        <PaginationArrow direction="left" href={createPageURL(currentPage - 1)} isDisabled={currentPage <= 1} />
-
-        <div className="flex -space-x-px">
-          {pagination.map((page, index) => {
-            let position: 'first' | 'last' | 'single' | 'middle' | undefined;
-
-            if (index === 0) position = 'first';
-            if (index === pagination.length - 1) position = 'last';
-            if (pagination.length === 1) position = 'single';
-            if (page === '...') position = 'middle';
-
-            return (
-              <PaginationNumber
-                key={page}
-                href={createPageURL(page)}
-                page={page}
-                position={position}
-                isActive={currentPage === page}
-              />
-            );
-          })}
+    <div className="inline-flex">
+      {totalItems > 0 && (
+        <div className="mr-2 flex items-center justify-center text-xs md:mr-4">
+          {startIndex}-{endIndex} of {totalItems}
         </div>
+      )}
+      <PaginationArrow direction="left" href={createPageURL(currentPage - 1)} isDisabled={currentPage <= 1} />
 
-        <PaginationArrow
-          direction="right"
-          href={createPageURL(currentPage + 1)}
-          isDisabled={currentPage >= totalPages}
-        />
+      <div className="flex -space-x-px">
+        {pagination.map((page, index) => {
+          let position: 'first' | 'last' | 'single' | 'middle' | undefined;
+
+          if (index === 0) position = 'first';
+          if (index === pagination.length - 1) position = 'last';
+          if (pagination.length === 1) position = 'single';
+          if (page === '...') position = 'middle';
+
+          return (
+            <PaginationNumber
+              key={page}
+              href={createPageURL(page)}
+              page={page}
+              position={position}
+              isActive={currentPage === page}
+            />
+          );
+        })}
       </div>
-    </>
+
+      <PaginationArrow direction="right" href={createPageURL(currentPage + 1)} isDisabled={currentPage >= totalPages} />
+    </div>
   );
 }
 
