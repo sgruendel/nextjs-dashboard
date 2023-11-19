@@ -70,9 +70,8 @@ const invoices = new mongoose.Schema(
       required: true,
     },
     date: {
-      type: String,
+      type: Date,
       required: true,
-      match: /^\d{4}-\d{2}-\d{2}$/,
     },
   },
   {

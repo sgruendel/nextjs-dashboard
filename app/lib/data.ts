@@ -152,7 +152,7 @@ function getInvoicesLookup(query: string) {
       foreignField: '_id',
       let: {
         invoice_amount: { $toString: '$amount' }, // TODO decimal point
-        invoice_date: '$date', // TODO $dateToString if proper date object, otherwise convert to display format
+        invoice_date: { $dateToString: { format: '%m %d, %Y', date: '$date' } }, // TODO should use %b for 3 letter month name as in UI on MongoDB 7
         invoice_status: '$status',
       },
       pipeline: [
@@ -163,8 +163,8 @@ function getInvoicesLookup(query: string) {
                 { $gte: [{ $indexOfCP: [{ $toLower: '$name' }, queryLower] }, 0] },
                 { $gte: [{ $indexOfCP: [{ $toLower: '$email' }, queryLower] }, 0] },
                 { $gte: [{ $indexOfCP: ['$$invoice_amount', queryLower] }, 0] },
-                { $gte: [{ $indexOfCP: ['$$invoice_date', queryLower] }, 0] },
-                { $gte: [{ $indexOfCP: ['$$invoice_status', queryLower] }, 0] },
+                { $gte: [{ $indexOfCP: ['$$invoice_date', queryLower] }, 0] }, // no need to lower case as month names from $dateToString are already lower cased
+                { $gte: [{ $indexOfCP: ['$$invoice_status', queryLower] }, 0] }, // no need to lower case as status is already lower cased
               ],
             },
           },
@@ -250,7 +250,6 @@ export async function fetchFilteredInvoicesCount(query: string) {
       invoices.status ILIKE ${`%${query}%`}
   `;
     */
-    // TODO Refactor to use same query as above
     const counts: MongoCount[] = await Invoices.aggregate([
       getInvoicesLookup(query),
       {
@@ -439,7 +438,7 @@ export async function fetchUserByEmail(email: string) {
   }
 }
 
-export async function createInvoice(customerId: string, amount: number, status: string, date: string) {
+export async function createInvoice(customerId: string, amount: number, status: string, date: Date) {
   await connectToDb();
   noStore();
 
