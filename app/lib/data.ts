@@ -1,16 +1,20 @@
 import { Schema, Types } from 'mongoose';
 import { unstable_noStore as noStore } from 'next/cache';
 
-
-
 import { connectToDb } from '@/app/lib/db';
-import { CustomerField, CustomersTable, InvoiceForm, InvoicesTable, LatestInvoice, Revenue, User } from '@/app/lib/definitions';
-import { formatCurrency } from '@/app/lib/utils';
+import {
+  CustomerField,
+  CustomersTable,
+  InvoiceForm,
+  InvoicesTable,
+  LatestInvoiceRaw,
+  Revenue,
+  User,
+} from '@/app/lib/definitions';
 import Customers from '@/app/models/customers';
 import Invoices from '@/app/models/invoices';
 import Revenues from '@/app/models/revenues';
 import Users from '@/app/models/users';
-
 
 type MongoGroupSum = {
   _id: string;
@@ -95,15 +99,7 @@ export async function fetchLatestInvoices() {
       LIMIT 5`;
       */
 
-    // TODO type LatestInvoice should be sth. like InvoiceWithCustomer
-    // TODO don't format amount here, do it in .tsx like ui/invoices/table.tsx
-    // TODO use objectIdToString()
-    const latestInvoices: LatestInvoice[] = invoices.map((invoice) => ({
-      ...invoice,
-      _id: invoice._id.toString(),
-      amount: formatCurrency(invoice.amount),
-    }));
-    return latestInvoices;
+    return objectIdToString(invoices) as LatestInvoiceRaw[];
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch the latest invoices.');
@@ -115,24 +111,23 @@ export async function fetchCardData() {
   noStore();
 
   try {
-    const invoiceCountPromise: Promise<number> = Invoices.countDocuments().exec();
-    const customerCountPromise: Promise<number> = Customers.countDocuments().exec();
-    const invoiceStatusPromise: Promise<MongoGroupSum[]> = Invoices.aggregate([
+    const invoicesCountPromise: Promise<number> = Invoices.countDocuments().exec();
+    const customersCountPromise: Promise<number> = Customers.countDocuments().exec();
+    const invoicesTotalsPromise: Promise<MongoGroupSum[]> = Invoices.aggregate([
       { $group: { _id: '$status', sum: { $sum: '$amount' } } },
     ]);
 
-    const data = await Promise.all([invoiceCountPromise, customerCountPromise, invoiceStatusPromise]);
-
-    const numberOfInvoices = data[0];
-    const numberOfCustomers = data[1];
-    // TODO don't format here, do it in .tsx
-    // TODO paid/pending can be summed in aggregate() as in fetchFilteredCustomers()
-    const totalPaidInvoices = formatCurrency(data[2].find((group) => group._id === 'paid')?.sum ?? 0);
-    const totalPendingInvoices = formatCurrency(data[2].find((group) => group._id === 'pending')?.sum ?? 0);
+    const [numberOfInvoices, numberOfCustomers, totals] = await Promise.all([
+      invoicesCountPromise,
+      customersCountPromise,
+      invoicesTotalsPromise,
+    ]);
+    const totalPaidInvoices = totals.find((group) => group._id === 'paid')?.sum ?? 0;
+    const totalPendingInvoices = totals.find((group) => group._id === 'pending')?.sum ?? 0;
 
     return {
-      numberOfCustomers,
       numberOfInvoices,
+      numberOfCustomers,
       totalPaidInvoices,
       totalPendingInvoices,
     };
@@ -420,16 +415,6 @@ export async function fetchFilteredCustomers(query: string) {
       .exec();
 
     return objectIdToString(customers) as CustomersTable[];
-
-    /*
-    const customers = data.rows.map((customer) => ({
-      ...customer,
-      total_pending: formatCurrency(customer.total_pending),
-      total_paid: formatCurrency(customer.total_paid),
-    }));
-
-    return customers;
-    */
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch customer table.');

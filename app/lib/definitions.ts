@@ -48,7 +48,7 @@ export type LatestInvoice = {
 };
 
 // The database returns a number for amount, but we later format it to a string with the formatCurrency function
-// TODO don't need for mongoDB
+// TODO naming, compare with CustomerTable: Raw/Formatted
 export type LatestInvoiceRaw = Omit<LatestInvoice, 'amount'> & {
   amount: number;
 };
