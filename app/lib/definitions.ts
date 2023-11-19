@@ -29,6 +29,7 @@ export type Invoice = {
 };
 
 export type Revenue = {
+  _id: string;
   month: string;
   revenue: number;
 };

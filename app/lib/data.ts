@@ -1,21 +1,16 @@
-import { Types } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 import { unstable_noStore as noStore } from 'next/cache';
 
+
+
 import { connectToDb } from '@/app/lib/db';
-import {
-  CustomerField,
-  CustomersTable,
-  InvoiceForm,
-  InvoicesTable,
-  LatestInvoice,
-  Revenue,
-  User,
-} from '@/app/lib/definitions';
+import { CustomerField, CustomersTable, InvoiceForm, InvoicesTable, LatestInvoice, Revenue, User } from '@/app/lib/definitions';
 import { formatCurrency } from '@/app/lib/utils';
 import Customers from '@/app/models/customers';
 import Invoices from '@/app/models/invoices';
 import Revenues from '@/app/models/revenues';
 import Users from '@/app/models/users';
+
 
 type MongoGroupSum = {
   _id: string;
@@ -24,7 +19,9 @@ type MongoGroupSum = {
 
 type MongoCount = { count: number };
 
-function objectIdToString(leanDocs) {
+type LeanDocument = { _id: Schema.Types.ObjectId };
+
+function objectIdToString(leanDocs: LeanDocument[]) {
   return leanDocs.map((leanDoc) => ({
     ...leanDoc,
     _id: leanDoc._id.toString(),
@@ -63,7 +60,6 @@ export async function fetchLatestInvoices() {
   noStore();
 
   try {
-    //const invoices = await Invoices.find().sort({date: -1}).limit(5).exec();
     // TODO type of aggregate()?
     const invoices = await Invoices.aggregate([
       {
@@ -78,16 +74,16 @@ export async function fetchLatestInvoices() {
         $unwind: '$customer',
       },
       {
+        $sort: { date: -1 },
+      },
+      {
         $project: {
           _id: 1,
-          'customer.name': 1,
-          'customer.image_url': 1,
-          'customer.email': 1,
+          customer: 1,
           amount: 1,
         },
       },
     ])
-      .sort({ date: -1 })
       .limit(5)
       .exec();
     /*
@@ -101,6 +97,7 @@ export async function fetchLatestInvoices() {
 
     // TODO type LatestInvoice should be sth. like InvoiceWithCustomer
     // TODO don't format amount here, do it in .tsx like ui/invoices/table.tsx
+    // TODO use objectIdToString()
     const latestInvoices: LatestInvoice[] = invoices.map((invoice) => ({
       ...invoice,
       _id: invoice._id.toString(),
@@ -118,9 +115,6 @@ export async function fetchCardData() {
   noStore();
 
   try {
-    // You can probably combine these into a single SQL query
-    // However, we are intentionally splitting them to demonstrate
-    // how to initialize multiple queries in parallel with JS.
     const invoiceCountPromise: Promise<number> = Invoices.countDocuments().exec();
     const customerCountPromise: Promise<number> = Customers.countDocuments().exec();
     const invoiceStatusPromise: Promise<MongoGroupSum[]> = Invoices.aggregate([
@@ -132,6 +126,7 @@ export async function fetchCardData() {
     const numberOfInvoices = data[0];
     const numberOfCustomers = data[1];
     // TODO don't format here, do it in .tsx
+    // TODO paid/pending can be summed in aggregate() as in fetchFilteredCustomers()
     const totalPaidInvoices = formatCurrency(data[2].find((group) => group._id === 'paid')?.sum ?? 0);
     const totalPendingInvoices = formatCurrency(data[2].find((group) => group._id === 'pending')?.sum ?? 0);
 
@@ -147,29 +142,34 @@ export async function fetchCardData() {
   }
 }
 
+/**
+ * Returns $lookup stage for aggregation pipeline to search for invoices.
+ *
+ * @param query to search case insensitive for in customer name, email or invoice amount/date/status
+ * @returns invoices matching query
+ */
 function getInvoicesLookup(query: string) {
+  const queryLower = query?.toLowerCase();
   return {
     $lookup: {
       from: Customers.collection.name,
       localField: 'customer_id',
       foreignField: '_id',
       let: {
-        name: { $toLower: '$name' },
-        email: { $toLower: '$email' },
-        amount: { $toString: '$amount' }, // TODO decimal point
-        date: '$date', // TODO $dateToString if proper date object, otherwise convert to display format
-        status: '$status',
+        invoice_amount: { $toString: '$amount' }, // TODO decimal point
+        invoice_date: '$date', // TODO $dateToString if proper date object, otherwise convert to display format
+        invoice_status: '$status',
       },
       pipeline: [
         {
           $match: {
             $expr: {
               $or: [
-                { $gte: [{ $indexOfCP: ['$name', query] }, 0] },
-                { $gte: [{ $indexOfCP: ['$email', query] }, 0] },
-                { $gte: [{ $indexOfCP: ['$$amount', query] }, 0] },
-                { $gte: [{ $indexOfCP: ['$$date', query] }, 0] },
-                { $gte: [{ $indexOfCP: ['$$status', query] }, 0] },
+                { $gte: [{ $indexOfCP: [{ $toLower: '$name' }, queryLower] }, 0] },
+                { $gte: [{ $indexOfCP: [{ $toLower: '$email' }, queryLower] }, 0] },
+                { $gte: [{ $indexOfCP: ['$$invoice_amount', queryLower] }, 0] },
+                { $gte: [{ $indexOfCP: ['$$invoice_date', queryLower] }, 0] },
+                { $gte: [{ $indexOfCP: ['$$invoice_status', queryLower] }, 0] },
               ],
             },
           },
@@ -215,18 +215,18 @@ export async function fetchFilteredInvoices(query: string, currentPage: number, 
         $unwind: '$customer',
       },
       {
+        $sort: { date: -1 },
+      },
+      {
         $project: {
           _id: 1,
-          'customer.name': 1,
-          'customer.image_url': 1,
-          'customer.email': 1,
+          customer: 1,
           date: 1,
           amount: 1,
           status: 1,
         },
       },
     ])
-      .sort({ date: -1 })
       .skip((currentPage - 1) * itemsPerPage)
       .limit(itemsPerPage)
       .exec();
@@ -332,6 +332,7 @@ export async function fetchFilteredCustomers(query: string) {
   noStore();
 
   try {
+    /*
     const data = await sql<CustomersTable>`
 		SELECT
 		  customers.id,
@@ -349,7 +350,78 @@ export async function fetchFilteredCustomers(query: string) {
 		GROUP BY customers.id, customers.name, customers.email, customers.image_url
 		ORDER BY customers.name ASC
 	  `;
+    */
 
+    const queryLower = query?.toLowerCase();
+
+    const customers = await Customers.aggregate([
+      {
+        $lookup: {
+          from: Invoices.collection.name,
+          localField: '_id',
+          foreignField: 'customer_id',
+          let: {
+            customer_name: '$name',
+            customer_email: '$email',
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $gte: [{ $indexOfCP: ['$$customer_name', queryLower] }, 0] },
+                    { $gte: [{ $indexOfCP: ['$$customer_email', queryLower] }, 0] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'invoice',
+        },
+      },
+      {
+        $unwind: '$invoice',
+      },
+      {
+        $group: {
+          _id: {
+            _id: '$_id',
+            name: '$name',
+            email: '$email',
+            image_url: '$image_url',
+          },
+          total_invoices: { $count: {} },
+          total_pending: {
+            $sum: {
+              $cond: [{ $eq: ['$invoice.status', 'pending'] }, '$invoice.amount', 0],
+            },
+          },
+          total_paid: {
+            $sum: {
+              $cond: [{ $eq: ['$invoice.status', 'paid'] }, '$invoice.amount', 0],
+            },
+          },
+        },
+      },
+      {
+        $replaceWith: {
+          $mergeObjects: [
+            '$_id',
+            { total_invoices: '$total_invoices', total_pending: '$total_pending', total_paid: '$total_paid' },
+          ],
+        },
+      },
+      {
+        $sort: { name: 1 },
+      },
+    ])
+      //.skip((currentPage - 1) * itemsPerPage)
+      //.limit(itemsPerPage)
+      .exec();
+
+    return objectIdToString(customers) as CustomersTable[];
+
+    /*
     const customers = data.rows.map((customer) => ({
       ...customer,
       total_pending: formatCurrency(customer.total_pending),
@@ -357,6 +429,7 @@ export async function fetchFilteredCustomers(query: string) {
     }));
 
     return customers;
+    */
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch customer table.');
@@ -371,7 +444,6 @@ export async function fetchUserByEmail(email: string) {
     const user = await Users.findOne({ email: email }).lean().select(['name', 'email', 'password']).exec();
     if (!user) return undefined;
 
-    // return null if user not found
     return {
       ...user,
       _id: user._id.toString(),
