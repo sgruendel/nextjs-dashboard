@@ -7,8 +7,11 @@ export const formatCurrency = (amount: number) => {
   });
 };
 
-export const formatDateToLocal = (dateStr: string, locale: string = 'en-US') => {
-  const date = new Date(dateStr);
+// format for MongoDB $dateToString to convert date object to format used for display in formatDateToLocal()
+// see https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateToString/
+export const MONGO_DATE_FORMAT = '%m %b, %Y';
+
+export const formatDateToLocal = (date: Date, locale: string = 'en-US') => {
   const options: Intl.DateTimeFormatOptions = {
     day: 'numeric',
     month: 'short',

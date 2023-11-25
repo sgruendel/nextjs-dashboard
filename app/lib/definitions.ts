@@ -61,7 +61,7 @@ export type InvoicesTable = {
   //name: string;
   //email: string;
   //image_url: string;
-  date: string;
+  date: Date;
   amount: number;
   status: 'pending' | 'paid';
 };
