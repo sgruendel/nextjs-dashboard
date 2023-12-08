@@ -51,7 +51,7 @@ const customers = new mongoose.Schema(
   }
 );
 customers.index({ name: 1 });
-customers.index({ email: 1 });
+customers.index({ email: 1 }, { unique: true });
 exports.Customers = mongoose.models.Customers || mongoose.model('Customers', customers);
 
 const invoices = new mongoose.Schema(
