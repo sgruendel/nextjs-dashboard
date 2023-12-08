@@ -36,7 +36,7 @@ export default async function InvoicesPage({
         <Search placeholder="Search invoices ..." />
         <CreateInvoice />
       </div>
-      <Suspense key={query + currentPage} fallback={<InvoicesTableSkeleton />}>
+      <Suspense key={query + '-' + currentPage + '-' + itemsPerPage} fallback={<InvoicesTableSkeleton />}>
         <Table query={query} currentPage={currentPage} itemsPerPage={itemsPerPage} />
       </Suspense>
       <div className="mt-5 flex w-full justify-center">
